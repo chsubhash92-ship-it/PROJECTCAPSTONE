@@ -1,0 +1,16 @@
+flask
+scapy
+pandas
+numpy
+xgboost
+scikit-learn
+matplotlib
+joblib
+shap
+tensorflow-cpu
+imbalanced-learn
+fpdf2
+gunicorn
+lime
+boto3
+python-dotenv

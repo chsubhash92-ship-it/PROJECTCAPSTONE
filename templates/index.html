@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Threat-Sentry | NIDS Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="dark-theme">
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo"> <span class="accent"></span></div>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" id="nav-dashboard" data-view="dashboard-view">
+                    <span class="icon">📊</span> 
+                </a>
+                <div class="nav-spacer"></div>
+                <a href="#" class="nav-item" id="nav-settings" data-view="settings-view">
+                    <span class="icon">⚙️</span> 
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="main-workspace">
+            <header class="top-header">
+                <div class="header-left">
+                    <h1>Network Info Overview</h1>
+                </div>
+                <div class="header-right">
+                    <div class="clock-display">
+                        <span class="icon"></span> <span id="clock">00:00:00</span>
+                    </div>
+                    <div class="engine-selector">
+                        <label>Active Engine:</label>
+                        <select id="model-select">
+                            {% for name in model_names %}
+                            <option value="{{ name }}">{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Model Performance Profile Banner -->
+            <div class="model-profile-banner" id="model-profile">
+                <div class="profile-item"><span class="label">ACC:</span> <span id="base-acc" class="value">-</span></div>
+                <div class="profile-item"><span class="label">PRC:</span> <span id="base-prc" class="value">-</span></div>
+                <div class="profile-item"><span class="label">REC:</span> <span id="base-rec" class="value">-</span></div>
+                <div class="profile-item"><span class="label">F1-S:</span> <span id="base-f1" class="value">-</span></div>
+                <div class="profile-item"><span class="label">AUC:</span> <span id="base-auc" class="value">-</span></div>
+            </div>
+
+            <main class="main-content-container">
+                <!-- Dashboard View -->
+                <div id="dashboard-view" class="view-content active">
+                    <section class="card analysis-control-card">
+                        <div class="card-header">
+                            <h2>Analysis</h2>
+                            <div class="header-controls">
+                                <input type="file" id="csv-file" accept=".csv" class="hidden-input">
+                                <label for="csv-file" id="file-label" class="ctrl-btn secondary small">Choose CSV</label>
+                                <button id="analyze-btn" class="ctrl-btn primary small">Run Diagnostics</button>
+                                <button id="download-pdf-btn" class="ctrl-btn accent small" style="display:none;">Export PDF</button>
+                            </div>
+                        </div>
+                        <div id="analysis-result"></div>
+                    </section>
+
+                    <!-- Threat Intelligence Center (NEW) -->
+                    <div class="diagnostic-row">
+                        <div class="card diag-card full-width primary-border">
+                            <div class="card-header">
+                                <h3>Threat Intelligence Center</h3>
+                                <div id="threat-badge-container"></div>
+                            </div>
+                            <div class="intelligence-grid" id="threat-intel-container">
+                                <p class="hint">Upload traffic data to see deep intelligence and recommended actions.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="diagnostic-grid">
+                        <!-- Row -1: Full Dataset Scan Summary -->
+                        <div class="diagnostic-row">
+                            <div class="card diag-card full-width">
+                                <div class="card-header"><h3>0. Full Dataset Analysis Summary</h3></div>
+                                <div id="scan-summary-container" class="text-placeholder">
+                                    <p class="hint">Upload a CSV to see the high-level dataset analysis summary here.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Row 0: Prediction Summary + SHAP Summary Plot -->
+                        <div class="diagnostic-row">
+                            <div class="card diag-card">
+                                <div class="card-header"><h3>Prediction Summary</h3></div>
+                                <div id="prediction-summary-container" class="text-placeholder">
+                                    <p class="hint">Run diagnostics to see prediction and top features.</p>
+                                </div>
+                            </div>
+                            <div class="card diag-card">
+                                <div class="card-header"><h3>SHAP Global Summary (Beeswarm)</h3></div>
+                                <div id="shap-beeswarm-container" class="plot-placeholder">
+                                    <p class="hint">Global SHAP summary will appear here.</p>
+                                </div>
+                            </div>
+                            <div class="card diag-card">
+                                <div class="card-header"><h3>Behavioral Feature Analysis (Average Normal vs. Attack)</h3></div>
+                                <div id="behavioral-container" style="padding:1rem; min-height:280px;">
+                                    <canvas id="behavioralChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="card diag-card full-width">
+                                <div class="card-header"><h3>1. AI Security Assistant reflection</h3></div>
+                                <div id="llm-analysis-container" class="text-placeholder terminal-view" style="min-height:150px; line-height:1.6; font-family:'Outfit', sans-serif;">
+                                    <p class="hint">Gemini analysis will appear here after diagnostic completion...</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="diagnostic-row">
+                            <div class="card diag-card full-width">
+                                <div class="card-header"><h3>Feature Contribution</h3></div>
+                                <div id="feature-contribution-container" class="text-placeholder" style="min-height:200px">
+                                    <p class="hint">Feature contributions will appear here after analysis.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="diagnostic-row">
+                            <div class="card diag-card">
+                                <div class="card-header"><h3>Local Explanation (SHAP Waterfall)</h3></div>
+                                <div id="shap-waterfall-container" class="plot-placeholder">
+                                    <p class="hint">Upload traffic data to generate SHAP visualizations.</p>
+                                </div>
+                            </div>
+                            <div class="card diag-card">
+                                <div class="card-header"><h3>Class-Wise Feature Impact</h3></div>
+                                <div id="shap-bar-container" class="plot-placeholder">
+                                    <p class="hint">Class-wise impact will appear here.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="diagnostic-row">
+                            <div class="card diag-card">
+                                <div class="card-header"><h3>SHAP Summary Plot</h3></div>
+                                <div id="lime-container" class="plot-placeholder">
+                                    <p class="hint">SHAP summary plot will appear here.</p>
+                                </div>
+                            </div>
+                            <div class="card diag-card">
+                                <div class="card-header"><h3>Data Rule (Decision Path)</h3></div>
+                                <div id="data-rule-container" class="text-placeholder terminal-view">
+                                    <p class="hint">Decision logic will be extracted here...</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="diagnostic-row">
+                            <div class="card diag-card full-width">
+                                <div class="card-header"><h3>Counterfactual Explanations</h3></div>
+                                <div id="counterfactual-container" class="text-placeholder terminal-view">
+                                    <p class="hint">Alternative scenarios will appear here...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings View -->
+                <div id="settings-view" class="view-content" style="display:none;">
+                    <section class="card settings-card">
+                        <div class="card-header">
+                            <h2>System Configuration</h2>
+                        </div>
+                        <div class="settings-grid">
+                            <div class="settings-panel">
+                                <h3>AI Security Assistant</h3>
+                                <div class="settings-item">
+                                    <label>Analysis Engine</label>
+                                    <div class="status-badge success">Amazon Bedrock Enabled</div>
+                                </div>
+                                <div class="settings-item">
+                                    <label>Model ID</label>
+                                    <span class="config-value">anthropic.claude-3-sonnet-v1:0</span>
+                                </div>
+                                <div class="settings-item">
+                                    <label>Region</label>
+                                    <span class="config-value">us-east-1</span>
+                                </div>
+                            </div>
+                            <div class="settings-panel">
+                                <h3>NIDS Engine Status</h3>
+                                <div class="status-card-grid">
+                                    <div class="min-stat-card">
+                                        <span class="label">Memory</span>
+                                        <span class="value">Cached</span>
+                                    </div>
+                                    <div class="min-stat-card">
+                                        <span class="label">Uptime</span>
+                                        <span class="value">99.9%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Load the new JS filename to bypass browser cache -->
+    <script src="{{ url_for('static', filename='js/dashboard_v25.js') }}"></script>
+</body>
+</html>
