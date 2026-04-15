@@ -1,3 +1,4 @@
+# 🛡️ Network Traffic Classification and Intrusion Detection System
 
 A comprehensive Machine Learning-based Network Intrusion Detection System (NIDS) capable of analyzing both offline datasets and real-time network traffic. The system classifies traffic as normal or malicious using the **CIC-IDS-2017** feature set.
 
